@@ -1,0 +1,45 @@
+version: '3.8'
+services:
+  voice-ai:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/voiceai
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - FROM_EMAIL=${FROM_EMAIL}
+      - STAFF_EMAIL=${STAFF_EMAIL}
+      - RESTAURANT_NAME=${RESTAURANT_NAME}
+      - CREDIT_UNION_NAME=${CREDIT_UNION_NAME}
+    depends_on:
+      - db
+    restart: unless-stopped
+    
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_DB: voiceai
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - voice-ai
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
